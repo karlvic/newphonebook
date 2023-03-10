@@ -8,14 +8,21 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css"
+        rel="stylesheet" />
+</head>
 
 <body class="bg-secondary">
 
     <div class="container">
-        <img src="https://cdn-icons-png.flaticon.com/512/183/183552.png" alt="PB icon" class="mt-3 mb-3" width="80"
-            height="100">
+
         <div class="row">
-            <input type="text" id="search" class="form-control mb-3" placeholder="Search..">
+            <div class="search-container">
+                <img src="https://cdn-icons-png.flaticon.com/512/183/183552.png" alt="PB icon" class="mt-3 mb-3"
+                    width="80" height="100">
+                @csrf
+                <input type="text" class="form-floating" id="search" name="search" placeholder="Search">
+            </div>
         </div>
         <div class="row">
             <div class="col bg-primary">
@@ -75,7 +82,8 @@
                         </div>
                     </div>
                 </div><br>
-                <a href="" class="btn btn-light mb-3">Edit</a> <br>
+
+                <br>
                 <!-- Button trigger modal -->
                 <button type="button" class="btn btn-light mb-3" data-bs-toggle="modal" data-bs-target="#providersId">
                     Providers
@@ -136,30 +144,26 @@
                 </div>
             </div>
             <div class="col bg-primary">
-                <table class="table table-hover text-center table-dark table-striped mt-3">
-                    <thead>
-                        <tr>
-                            <th scope="col">LASTNAME</th>
-                            <th scope="col">FIRSTNAME</th>
-                            <th scope="col">MIDDLENAME</th>
-                            <th scope="col">GENDER</th>
-                            <th scope="col">ADDRESS</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($users as $item)
-                            <tr id="{{ $item->id }}" class="clickable-row">
-                                <td>{{ $item->lastname }}</td>
-                                <td>{{ $item->firstname }}</td>
-                                <td>{{ $item->middlename }}</td>
-                                <td>{{ $item->gender }}</td>
-                                <td>{{ $item->address }}</td>
+                <div class="table-responsive">
+                    <table class="table table-hover text-center table-dark table-striped mt-3">
+                        <thead>
+                            <tr>
+                                <th scope="col">LASTNAME</th>
+                                <th scope="col">FIRSTNAME</th>
+                                <th scope="col">MIDDLENAME</th>
+                                <th scope="col">GENDER</th>
+                                <th scope="col">ADDRESS</th>
+                                <th></th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                <div class="d-flex justify-content-center">
-                    {!! $users->links() !!}
+                        </thead>
+                        <tbody>
+                            @include('subscribers.search-results', ['users' => $users])
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination-container">
+                    {{ $users->links() }}
                 </div>
             </div>
         </div>
@@ -168,16 +172,30 @@
         integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous">
     </script>
     <script>
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
-        });
+        //Get table id
         $(document).ready(function() {
             $("tr").click(function() {
                 var id = $(this).attr('id');
-                alert("Selected row ID: " + id);
-                // Do whatever you want with the ID here
+            });
+            
+        });
+    </script>
+
+    <script>
+        //Get search    
+        $(document).ready(function() {
+            $('#search').on('input', function() {
+                var query = $(this).val();
+                $.ajax({
+                    url: '/subscribers/search',
+                    type: 'GET',
+                    data: {
+                        query: query
+                    },
+                    success: function(response) {
+                        $('tbody').html(response);
+                    }
+                });
             });
         });
     </script>

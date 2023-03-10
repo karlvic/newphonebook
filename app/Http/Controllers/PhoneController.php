@@ -18,7 +18,7 @@ class PhoneController extends Controller
             ->orderByDesc('id')
             ->paginate(10);
 
-        return view('index', ['users' => $users], ['providers' => $providers]);
+        return view('subscribers.index', ['users' => $users], ['providers' => $providers]);
     }
 
     public function saveUsers(Request $request)
@@ -49,10 +49,13 @@ class PhoneController extends Controller
         return redirect('/');
     }
 
+    public function update(Request $request){
+
+    }
+
     public function saveProviders(Request $request)
     {
-
-
+        
         DB::table('subscriberdetail')->insert([
             'phoneno' => $request->input('phoneNumber'),
             'provider' => $request->input('provider'),

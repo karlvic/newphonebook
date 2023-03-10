@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\PhoneController;
 use App\Http\Controllers\SearchController;
+use App\Http\Controllers\SubscriberController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,8 +17,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 //Show list
-Route::get('/', [PhoneController::class, 'index']);
-
+Route::get('/', [PhoneController::class, 'index' ]);
 
 //Save users info
 Route::post('/formRoute', [PhoneController::class, 'saveUsers'])->name('saveUsers');
@@ -25,3 +25,6 @@ Route::post('/formRoute', [PhoneController::class, 'saveUsers'])->name('saveUser
 Route::post('/formProvidersRoute', [PhoneController::class, 'saveProviders'])->name('saveProviders');
 
 //
+Route::get('/subscribers/search', [SearchController::class, 'search'])->name('subscribers.search');
+
+
