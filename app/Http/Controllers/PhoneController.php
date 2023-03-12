@@ -41,14 +41,17 @@ class PhoneController extends Controller {
     }
 
     public function saveProviders( Request $request ) {
+        $provider = $request->input( 'provider' );
+        $phoneNumber = $request->input( 'phoneNumber' );
+        $headerId = $request->input( 'headerId' );
 
         DB::table( 'subscriberdetail' )->insert( [
-            'phoneno' => $request->input( 'phoneNumber' ),
-            'provider' => $request->input( 'provider' ),
-            'deleted' => $request->input( 'deleted' ),
-            /*             'headerId' => $request->input( '' ) */
+            'headerId' => $headerId,
+            'provider' => $provider,
+            'phoneno' => $phoneNumber,
         ] );
 
+        return response()->json( [ 'success' => true ] );
         return redirect( '/' );
     }
 

@@ -86,68 +86,18 @@
                 <button id="edit-btn" class="btn btn-light mb-3">Edit</button><br>
 
                 <!-- Button trigger modal -->
-                <button type="button" class="btn btn-light mb-3" data-bs-toggle="modal" data-bs-target="#providersId">
+                <button type="button" id="providers-btn" disabled class="btn btn-light mb-3" data-bs-toggle="modal"
+                    data-bs-target="#providersId">
                     Providers
                 </button>
 
-                <!-- Modal -->
-                <div class="modal fade" id="providersId" data-bs-backdrop="static" data-bs-keyboard="false"
-                    tabindex="-1" aria-labelledby="providers" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="providers">Providers</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <form action="{{ route('saveProviders') }}" method="post">
-                                    {{ csrf_field() }}
-                                    <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="z" placeholder="text"
-                                            name="provider">
-                                        <label for="z">Provider</label>
-                                    </div>
-                                    <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="x" placeholder="text"
-                                            name="phoneNumber">
-                                        <label for="x">Phone Number</label>
-                                    </div>
-                                    <div class="">
-                                        <table class="table table-hover text-center table-dark table-striped mt-3">
-                                            <thead>
-                                                <tr>
-                                                    <th scope="col">PROVIDER</th>
-                                                    <th scope="col">PHONENO</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach ($providers as $item)
-                                                    <tr>
-                                                        <td>{{ $item->phoneno }}</td>
-                                                        <td>{{ $item->provider }}</td>
+                @include('subscribers.providers')
 
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <input type="hidden" name="deleted" value=0 id="">
-                                    <div class="modal-footer">
-                                        <button type="submit" class="btn btn-primary">Save</button>
-                                        <button type="button" class="btn btn-danger"
-                                            data-bs-dismiss="modal">Close</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <div class="col">
                 <!-- Add the "editable-cell" class to the table cells that you want to be editable -->
-                <table>
+                <table class="table-bordered">
                     <thead>
                         <tr>
                             <th scope="col">LASTNAME</th>
@@ -261,6 +211,7 @@
         $(document).ready(function() {
             var isEditing = false;
             var editingCell = null;
+            var originalValue = null;
             var csrfToken = $('meta[name="csrf-token"]').attr('content');
 
             $("#edit-btn").click(function() {
@@ -271,7 +222,8 @@
             $("table td").click(function() {
                 if (isEditing && editingCell == null) {
                     editingCell = $(this);
-                    var value = editingCell.text().trim();
+                    originalValue = editingCell.text().trim();
+                    var value = originalValue;
                     editingCell.html("<input type='text' value='" + value + "'>");
                     editingCell.find("input").focus();
                 }
@@ -311,12 +263,95 @@
             $(document).click(function(event) {
                 if (isEditing && editingCell != null && !editingCell.is(event.target) && editingCell.has(
                         event.target).length === 0) {
-                    var value = editingCell.find("input").val().trim();
-                    editingCell.text(value);
+                    editingCell.text(originalValue);
                     editingCell = null;
+                    originalValue = null;
                     isEditing = false;
                     $("#edit-btn").attr("disabled", false);
                 }
+
+                if ($(event.target).closest('table').length === 0) {
+                    if (editingCell != null) {
+                        editingCell.text(originalValue);
+                        editingCell = null;
+                        originalValue = null;
+                    }
+                    isEditing = false;
+                    $("#edit-btn").attr("disabled", false);
+                }
+            });
+        });
+    </script>
+
+
+    <script>
+        $(document).ready(function() {
+            var $tableRows = $('table tbody tr');
+            var $providersBtn = $('#providers-btn');
+            var selectedRowId = null;
+
+            // Disable the providers button on page load
+            $providersBtn.prop('disabled', true);
+
+            // Listen for clicks on table rows
+            $tableRows.click(function() {
+                if ($(this).hasClass('active')) {
+                    // If the clicked row is already active, remove the "active" class and disable the button
+                    $(this).removeClass('active');
+                    $providersBtn.prop('disabled', true);
+                } else {
+                    // If the clicked row is not active, remove "active" class from all rows, add it to the clicked row, and enable the button
+                    $tableRows.removeClass('active');
+                    $(this).addClass('active');
+                    $providersBtn.prop('disabled', false);
+
+                    // Get the ID of the clicked row
+                    selectedRowId = $(this).attr('id');
+                }
+            });
+
+            // Listen for clicks outside the table
+            $(document).click(function(event) {
+                if (!$(event.target).closest('table').length) {
+                    // Remove active class from all rows
+                    $tableRows.removeClass('active');
+
+                    // Disable the providers button
+                    $providersBtn.prop('disabled', true);
+
+                    selectedRowId = null;
+                }
+            });
+
+            // Listen for clicks on the providers button
+            $providersBtn.click(function() {
+                // Get the input values
+                var provider = $('#z').val();
+                var phoneNumber = $('#x').val();
+
+                // Send the AJAX request to update the subscriber detail
+                $.ajax({
+                    url: '{{ route('saveProviders') }}',
+                    method: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        provider: provider,
+                        phoneNumber: phoneNumber,
+                        headerId: selectedRowId,
+                    },
+                    success: function(response) {
+                        // Do something on success, such as showing a success message
+                        console.log('Subscriber detail updated successfully.');
+                    },
+                    error: function(xhr, status, error) {
+                        // Do something on error, such as showing an error message
+                        console.error('An error occurred while updating the subscriber detail:',
+                            error);
+                    }
+                });
+
+                // Close the modal
+                $('#providersId').modal('hide');
             });
         });
     </script>

@@ -15,8 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('phoneno', 55);
             $table->string('provider', 55);
-            $table->boolean('deleted');
-            $table->unsignedBigInteger('headerId')->notNull();
+            $table->boolean('deleted')->nullable();
+            $table->unsignedBigInteger('headerId')->nullable();
             $table->foreign('headerId')
                 ->references('id')->on('subscriber')->onDelete('cascade');
         });

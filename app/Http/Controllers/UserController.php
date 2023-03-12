@@ -18,6 +18,10 @@ class UserController extends Controller {
             $column => $value,
             'updateddatetime' => DB::raw( 'CURRENT_TIMESTAMP' )
         ] );
+
+        return redirect( '/' );
     }
+
+    
 
 }
