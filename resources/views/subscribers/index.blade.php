@@ -4,13 +4,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <title>PB demo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="//cdnjs.cloudflare.com/ajax/libs/x-editable/1.5.0/bootstrap3-editable/css/bootstrap-editable.css"
-        rel="stylesheet" />
-</head>
+
 
 <body class="bg-secondary">
 
@@ -21,7 +21,7 @@
                 <img src="https://cdn-icons-png.flaticon.com/512/183/183552.png" alt="PB icon" class="mt-3 mb-3"
                     width="80" height="100">
                 @csrf
-                <input type="text" class="form-floating" id="search" name="search" placeholder="Search">
+                <input type="text" id="search" name="search" placeholder="Search">
             </div>
         </div>
         <div class="row">
@@ -83,7 +83,8 @@
                     </div>
                 </div><br>
 
-                <br>
+                <button id="edit-btn" class="btn btn-light mb-3">Edit</button><br>
+
                 <!-- Button trigger modal -->
                 <button type="button" class="btn btn-light mb-3" data-bs-toggle="modal" data-bs-target="#providersId">
                     Providers
@@ -143,25 +144,23 @@
                     </div>
                 </div>
             </div>
-            <div class="col bg-primary">
-                <div class="table-responsive">
-                    <table class="table table-hover text-center table-dark table-striped mt-3">
-                        <thead>
-                            <tr>
-                                <th scope="col">LASTNAME</th>
-                                <th scope="col">FIRSTNAME</th>
-                                <th scope="col">MIDDLENAME</th>
-                                <th scope="col">GENDER</th>
-                                <th scope="col">ADDRESS</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @include('subscribers.search-results', ['users' => $users])
-                        </tbody>
-                    </table>
-                </div>
 
+            <div class="col">
+                <!-- Add the "editable-cell" class to the table cells that you want to be editable -->
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">LASTNAME</th>
+                            <th scope="col">FIRSTNAME</th>
+                            <th scope="col">MIDDLENAME</th>
+                            <th scope="col">GENDER</th>
+                            <th scope="col">ADDRESS</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @include('subscribers.search-results')
+                    </tbody>
+                </table>
                 <div class="pagination-container">
                     {{ $users->links() }}
                 </div>
@@ -170,15 +169,6 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous">
-    </script>
-    <script>
-        //Get table id
-        $(document).ready(function() {
-            $("tr").click(function() {
-                var id = $(this).attr('id');
-            });
-            
-        });
     </script>
 
     <script>
@@ -194,11 +184,144 @@
                     },
                     success: function(response) {
                         $('tbody').html(response);
+                        $('.edit-cell').off('click keypress');
+                        applyEditFunctionality();
                     }
                 });
             });
+
+            function applyEditFunctionality() {
+                var isEditing = false;
+                var editingCell = null;
+                var csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+                $("#edit-btn").click(function() {
+                    isEditing = true;
+                    $(this).attr("disabled", true);
+                });
+
+                $("table td").click(function() {
+                    if (isEditing && editingCell == null) {
+                        editingCell = $(this);
+                        var value = editingCell.text().trim();
+                        editingCell.html("<input type='text' value='" + value + "'>");
+                        editingCell.find("input").focus();
+                    }
+                });
+
+                $("table td").on("keydown", "input", function(event) {
+                    if (event.which == 13) {
+                        event.preventDefault();
+                        var value = $(this).val().trim();
+                        var id = editingCell.parent().attr("id");
+                        var column = editingCell.attr("data-column");
+
+                        $.ajax({
+                            url: "/subscriber/update",
+                            method: "POST",
+                            headers: {
+                                'X-CSRF-TOKEN': csrfToken
+                            },
+                            data: {
+                                id: id,
+                                column: column,
+                                value: value
+                            },
+                            success: function(response) {
+                                editingCell.text(value);
+                                editingCell = null;
+                                isEditing = false;
+                                $("#edit-btn").attr("disabled", false);
+                            },
+                            error: function(xhr, status, error) {
+                                console.log(xhr.responseText);
+                            }
+                        });
+                    }
+                });
+
+                $(document).click(function(event) {
+                    if (isEditing && editingCell != null && !editingCell.is(event.target) && editingCell
+                        .has(
+                            event.target).length === 0) {
+                        var value = editingCell.find("input").val().trim();
+                        editingCell.text(value);
+                        editingCell = null;
+                        isEditing = false;
+                        $("#edit-btn").attr("disabled", false);
+                    }
+                });
+            }
+
+            applyEditFunctionality();
         });
     </script>
+
+    <script>
+        $(document).ready(function() {
+            var isEditing = false;
+            var editingCell = null;
+            var csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+            $("#edit-btn").click(function() {
+                isEditing = true;
+                $(this).attr("disabled", true);
+            });
+
+            $("table td").click(function() {
+                if (isEditing && editingCell == null) {
+                    editingCell = $(this);
+                    var value = editingCell.text().trim();
+                    editingCell.html("<input type='text' value='" + value + "'>");
+                    editingCell.find("input").focus();
+                }
+            });
+
+            $("table td").on("keydown", "input", function(event) {
+                if (event.which == 13) {
+                    event.preventDefault();
+                    var value = $(this).val().trim();
+                    var id = editingCell.parent().attr("id");
+                    var column = editingCell.attr("data-column");
+
+                    $.ajax({
+                        url: "/subscriber/update",
+                        method: "POST",
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        data: {
+                            id: id,
+                            column: column,
+                            value: value
+                        },
+                        success: function(response) {
+                            editingCell.text(value);
+                            editingCell = null;
+                            isEditing = false;
+                            $("#edit-btn").attr("disabled", false);
+                        },
+                        error: function(xhr, status, error) {
+                            console.log(xhr.responseText);
+                        }
+                    });
+                }
+            });
+
+            $(document).click(function(event) {
+                if (isEditing && editingCell != null && !editingCell.is(event.target) && editingCell.has(
+                        event.target).length === 0) {
+                    var value = editingCell.find("input").val().trim();
+                    editingCell.text(value);
+                    editingCell = null;
+                    isEditing = false;
+                    $("#edit-btn").attr("disabled", false);
+                }
+            });
+        });
+    </script>
+
+
 
 
 </body>
